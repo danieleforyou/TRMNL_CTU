@@ -110,12 +110,10 @@ def send_to_trmnl(perizie):
     
     # Crea l'array di perizie con info formattate
     perizie_data = []
-    for p in perizie[:6]:  # Max 6 perizie
+    for p in perizie[:1]:  # SOLO 1 PERIZIA PER TEST
         perizie_data.append({
             'numero': p['numero'],
             'tribunale': p['tribunale'],
-            'giudice': p['giudice'],
-            'luogo_iop': p['luogo_iop'],
             'giur': format_days(p['giuramento']),
             'giur_urg': is_urgent(p['giuramento']),
             'giur_data': p['data_giuramento'],
@@ -131,6 +129,8 @@ def send_to_trmnl(perizie):
             'any_urgent': (is_urgent(p['giuramento']) or is_urgent(p['inizio']) or 
                           is_urgent(p['bozza']) or is_urgent(p['deposito']))
         })
+    
+    print(f"✓ Preparate {len(perizie_data)} perizie per invio (SENZA giudice/luogo per test)")
     
     # Payload per TRMNL - STRUTTURA CORRETTA
     payload = {
