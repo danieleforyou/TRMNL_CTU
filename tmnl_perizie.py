@@ -40,6 +40,14 @@ def calculate_days_difference(target_date_str):
     except:
         return None
 
+def format_date(date_str):
+    """Formatta la data in formato gg/mm/aaaa"""
+    try:
+        date_obj = datetime.strptime(date_str, '%Y-%m-%d')
+        return date_obj.strftime('%d/%m/%Y')
+    except:
+        return ""
+
 def process_perizie(df):
     """Processa i dati delle perizie e calcola i giorni"""
     perizie = []
@@ -54,7 +62,11 @@ def process_perizie(df):
             'giuramento': calculate_days_difference(row['Data_Giuramento']),
             'inizio': calculate_days_difference(row['Data_Inizio']),
             'bozza': calculate_days_difference(row['Data_Bozza']),
-            'deposito': calculate_days_difference(row['Data_Deposito'])
+            'deposito': calculate_days_difference(row['Data_Deposito']),
+            'data_giuramento': format_date(row['Data_Giuramento']),
+            'data_inizio': format_date(row['Data_Inizio']),
+            'data_bozza': format_date(row['Data_Bozza']),
+            'data_deposito': format_date(row['Data_Deposito'])
         }
         
         # Calcola urgenza minima
@@ -99,12 +111,16 @@ def send_to_trmnl(perizie):
             'tribunale': p['tribunale'],
             'giur': format_days(p['giuramento']),
             'giur_urg': is_urgent(p['giuramento']),
+            'giur_data': p['data_giuramento'],
             'inizio': format_days(p['inizio']),
             'inizio_urg': is_urgent(p['inizio']),
+            'inizio_data': p['data_inizio'],
             'bozza': format_days(p['bozza']),
             'bozza_urg': is_urgent(p['bozza']),
+            'bozza_data': p['data_bozza'],
             'dep': format_days(p['deposito']),
             'dep_urg': is_urgent(p['deposito']),
+            'dep_data': p['data_deposito'],
             'any_urgent': (is_urgent(p['giuramento']) or is_urgent(p['inizio']) or 
                           is_urgent(p['bozza']) or is_urgent(p['deposito']))
         })
