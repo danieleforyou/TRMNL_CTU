@@ -24,7 +24,10 @@ def read_google_sheet():
     
     try:
         df = pd.read_csv(url)
+        # Rimuove spazi dai nomi delle colonne
+        df.columns = df.columns.str.strip()
         print(f"✓ Letti {len(df)} record dal Google Sheet")
+        print(f"  Colonne trovate: {list(df.columns)}")
         return df
     except Exception as e:
         print(f"✗ Errore lettura Google Sheet: {e}")
