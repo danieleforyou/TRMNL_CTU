@@ -59,6 +59,8 @@ def process_perizie(df):
         perizia = {
             'numero': row['Numero_Perizia'],
             'tribunale': row['Tribunale'],
+            'giudice': row.get('Giudice', ''),
+            'luogo_iop': row.get('Luogo_IOP', ''),
             'giuramento': calculate_days_difference(row['Data_Giuramento']),
             'inizio': calculate_days_difference(row['Data_Inizio']),
             'bozza': calculate_days_difference(row['Data_Bozza']),
@@ -109,6 +111,8 @@ def send_to_trmnl(perizie):
         perizie_data.append({
             'numero': p['numero'],
             'tribunale': p['tribunale'],
+            'giudice': p['giudice'],
+            'luogo_iop': p['luogo_iop'],
             'giur': format_days(p['giuramento']),
             'giur_urg': is_urgent(p['giuramento']),
             'giur_data': p['data_giuramento'],
