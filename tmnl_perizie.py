@@ -101,21 +101,42 @@ def is_urgent(days):
 def send_to_trmnl(perizie):
     """Invia i dati a TRMNL via Webhook"""
     
-    # TEST MINIMO - solo i dati essenziali
+    # Prepara i dati per TRMNL
+    oggi = datetime.now().strftime('%A %d %B %Y')
+    giorni_it = {'Monday': 'Lunedì', 'Tuesday': 'Martedì', 'Wednesday': 'Mercoledì',
+                 'Thursday': 'Giovedì', 'Friday': 'Venerdì', 'Saturday': 'Sabato', 'Sunday': 'Domenica'}
+    for eng, ita in giorni_it.items():
+        oggi = oggi.replace(eng, ita)
+    
+    # Crea l'array di perizie con info formattate
     perizie_data = []
-    for p in perizie[:3]:  # Solo 3 perizie
+    for p in perizie[:5]:  # Max 5 perizie
         perizie_data.append({
             'numero': p['numero'],
             'tribunale': p['tribunale'],
+            'giudice': p.get('giudice', ''),
+            'luogo_iop': p.get('luogo_iop', ''),
             'giur': format_days(p['giuramento']),
+            'giur_urg': is_urgent(p['giuramento']),
+            'giur_data': p['data_giuramento'],
             'inizio': format_days(p['inizio']),
+            'inizio_urg': is_urgent(p['inizio']),
+            'inizio_data': p['data_inizio'],
             'bozza': format_days(p['bozza']),
-            'dep': format_days(p['deposito'])
+            'bozza_urg': is_urgent(p['bozza']),
+            'bozza_data': p['data_bozza'],
+            'dep': format_days(p['deposito']),
+            'dep_urg': is_urgent(p['deposito']),
+            'dep_data': p['data_deposito'],
+            'any_urgent': (is_urgent(p['giuramento']) or is_urgent(p['inizio']) or 
+                          is_urgent(p['bozza']) or is_urgent(p['deposito']))
         })
     
-    # Payload MINIMO
+    # Payload per TRMNL
     payload = {
         "merge_variables": {
+            "data_aggiornamento": oggi,
+            "num_perizie": len(perizie),
             "perizie": perizie_data
         }
     }
@@ -123,10 +144,7 @@ def send_to_trmnl(perizie):
     # Calcola dimensione
     import json
     payload_size = len(json.dumps(payload))
-    print(f"✓ Dimensione payload: {payload_size} bytes")
-    
-    if payload_size > 2000:
-        print(f"⚠ ATTENZIONE: Payload troppo grande! (limite ~2KB)")
+    print(f"✓ Dimensione payload: {payload_size} bytes ({len(perizie_data)} perizie)")
     
     # Invia a TRMNL
     try:
@@ -140,8 +158,6 @@ def send_to_trmnl(perizie):
         return True
     except Exception as e:
         print(f"✗ Errore invio a TRMNL: {e}")
-        if hasattr(e, 'response') and e.response is not None:
-            print(f"  Risposta server: {e.response.text[:200]}")
         return False
 
 # ==================== MAIN ====================
