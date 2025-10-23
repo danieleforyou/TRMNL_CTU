@@ -111,7 +111,11 @@ def send_to_trmnl(perizie):
     
     # Payload per TRMNL
     payload = {
-        "merge_variables": perizie_data
+        "merge_variables": {
+            "data_aggiornamento": oggi,
+            "num_perizie": len(perizie),
+            "perizie": perizie_data
+        }
     }
     
     # Invia a TRMNL
