@@ -141,6 +141,11 @@ def send_to_trmnl(perizie):
         }
     }
     
+    # Debug: stampa il payload
+    import json
+    print(f"✓ Payload preparato:")
+    print(json.dumps(payload, indent=2, ensure_ascii=False)[:500])  # Prime 500 char
+    
     # Invia a TRMNL
     try:
         response = requests.post(
@@ -153,6 +158,8 @@ def send_to_trmnl(perizie):
         return True
     except Exception as e:
         print(f"✗ Errore invio a TRMNL: {e}")
+        if hasattr(e, 'response') and e.response is not None:
+            print(f"  Risposta del server: {e.response.text}")
         return False
 
 # ==================== MAIN ====================
