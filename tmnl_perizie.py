@@ -1,190 +1,101 @@
-#!/usr/bin/env python3
-"""
-Script per visualizzare perizie su TRMNL e-ink display
-Legge da Google Sheet e invia dati via Webhook a TRMNL
-"""
+<div class="layout">
+  <!-- Header con informazioni generali -->
+  <div class="flex flex--justify-between flex--align-center mb-16">
+    <span class="title">Perizie CTU</span>
+    <span class="label">{{ data_aggiornamento }}</span>
+  </div>
 
-import os
-import requests
-from datetime import datetime, date
-import pandas as pd
+  <!-- Loop attraverso le perizie -->
+  {% for perizia in perizie %}
+  <div class="item mb-16">
+    <div class="content">
+      <!-- Intestazione perizia -->
+      <div class="flex flex--justify-between flex--align-center mb-8">
+        <span class="title title--small">{{ perizia.numero }}</span>
+        <span class="label">{{ perizia.tribunale }}</span>
+      </div>
 
-# ==================== CONFIGURAZIONE ====================
-GOOGLE_SHEET_ID = os.environ.get('GOOGLE_SHEET_ID', 'YOUR_SHEET_ID_HERE')
-TRMNL_WEBHOOK_URL = os.environ.get('TRMNL_WEBHOOK_URL', 'YOUR_WEBHOOK_URL_HERE')
+      {% if perizia.giudice != '' or perizia.luogo_iop != '' %}
+      <div class="flex flex--justify-between mb-8">
+        {% if perizia.giudice != '' %}
+        <span class="description">Giudice: {{ perizia.giudice }}</span>
+        {% endif %}
+        {% if perizia.luogo_iop != '' %}
+        <span class="description">{{ perizia.luogo_iop }}</span>
+        {% endif %}
+      </div>
+      {% endif %}
 
-# Soglia urgenza (giorni)
-URGENCY_THRESHOLD = 7
-
-# ==================== FUNZIONI ====================
-
-def read_google_sheet():
-    """Legge i dati dal Google Sheet pubblico"""
-    url = f'https://docs.google.com/spreadsheets/d/{GOOGLE_SHEET_ID}/export?format=csv&gid=0'
-    
-    try:
-        df = pd.read_csv(url)
-        # Rimuove spazi dai nomi delle colonne
-        df.columns = df.columns.str.strip()
-        print(f"✓ Letti {len(df)} record dal Google Sheet")
-        print(f"  Colonne trovate: {list(df.columns)}")
-        return df
-    except Exception as e:
-        print(f"✗ Errore lettura Google Sheet: {e}")
-        return None
-
-def calculate_days_difference(target_date_str):
-    """Calcola la differenza in giorni da oggi"""
-    try:
-        target_date = datetime.strptime(target_date_str, '%Y-%m-%d').date()
-        today = date.today()
-        diff = (target_date - today).days
-        return diff
-    except:
-        return None
-
-def format_date(date_str):
-    """Formatta la data in formato gg/mm/aaaa"""
-    try:
-        date_obj = datetime.strptime(date_str, '%Y-%m-%d')
-        return date_obj.strftime('%d/%m/%Y')
-    except:
-        return ""
-
-def process_perizie(df):
-    """Processa i dati delle perizie e calcola i giorni"""
-    perizie = []
-    
-    for _, row in df.iterrows():
-        if row['Stato'] != 'Attiva':
-            continue
-            
-        perizia = {
-            'numero': row['Numero_Perizia'],
-            'tribunale': row['Tribunale'],
-            'giudice': row.get('Giudice', ''),
-            'parti': row.get('Parti', ''),
-            'luogo_iop': row.get('Luogo_IOP', ''),
-            'giuramento': calculate_days_difference(row['Data_Giuramento']),
-            'inizio': calculate_days_difference(row['Data_Inizio']),
-            'bozza': calculate_days_difference(row['Data_Bozza']),
-            'deposito': calculate_days_difference(row['Data_Deposito']),
-            'data_giuramento': format_date(row['Data_Giuramento']),
-            'data_inizio': format_date(row['Data_Inizio']),
-            'data_bozza': format_date(row['Data_Bozza']),
-            'data_deposito': format_date(row['Data_Deposito'])
-        }
+      <!-- Grid delle milestone -->
+      <div class="grid grid--4 gap-8">
         
-        # Calcola urgenza minima
-        giorni = [perizia['giuramento'], perizia['inizio'], 
-                  perizia['bozza'], perizia['deposito']]
-        giorni_positivi = [g for g in giorni if g is not None and g > 0]
-        perizia['urgenza_min'] = min(giorni_positivi) if giorni_positivi else 999
-        
-        perizie.append(perizia)
-    
-    # Ordina per urgenza
-    perizie.sort(key=lambda x: x['urgenza_min'])
-    
-    print(f"✓ Processate {len(perizie)} perizie attive")
-    return perizie
+        <!-- GIURAMENTO -->
+        <div class="flex flex--column flex--align-center p-8 rounded-4 
+                    {% if perizia.giur_urg %}bg--gray-70{% else %}bg--gray-10{% endif %}">
+          <span class="label mb-4">Giuramento</span>
+          <span class="value value--large 
+                       {% if perizia.giur_urg %}text--white{% endif %}">
+            {{ perizia.giur }}
+          </span>
+          <span class="description {% if perizia.giur_urg %}text--white{% endif %}">
+            {{ perizia.giur_data }}
+          </span>
+        </div>
 
-def format_days(days):
-    """Formatta i giorni con segno"""
-    if days is None:
-        return "N/A"
-    return f"{days:+d}" if days != 0 else "0"
+        <!-- INIZIO OPERAZIONI -->
+        <div class="flex flex--column flex--align-center p-8 rounded-4
+                    {% if perizia.inizio_urg %}bg--gray-70{% else %}bg--gray-10{% endif %}">
+          <span class="label mb-4">Inizio IOP</span>
+          <span class="value value--large
+                       {% if perizia.inizio_urg %}text--white{% endif %}">
+            {{ perizia.inizio }}
+          </span>
+          <span class="description {% if perizia.inizio_urg %}text--white{% endif %}">
+            {{ perizia.inizio_data }}
+          </span>
+        </div>
 
-def is_urgent(days):
-    """Verifica se una data è urgente"""
-    return days is not None and 0 < days <= URGENCY_THRESHOLD
+        <!-- BOZZA -->
+        <div class="flex flex--column flex--align-center p-8 rounded-4
+                    {% if perizia.bozza_urg %}bg--gray-70{% else %}bg--gray-10{% endif %}">
+          <span class="label mb-4">Bozza</span>
+          <span class="value value--large
+                       {% if perizia.bozza_urg %}text--white{% endif %}">
+            {{ perizia.bozza }}
+          </span>
+          <span class="description {% if perizia.bozza_urg %}text--white{% endif %}">
+            {{ perizia.bozza_data }}
+          </span>
+        </div>
 
-def send_to_trmnl(perizie):
-    """Invia i dati a TRMNL via Webhook"""
-    
-    # Prepara i dati per TRMNL
-    oggi = datetime.now().strftime('%A %d %B %Y')
-    giorni_it = {'Monday': 'Lunedì', 'Tuesday': 'Martedì', 'Wednesday': 'Mercoledì',
-                 'Thursday': 'Giovedì', 'Friday': 'Venerdì', 'Saturday': 'Sabato', 'Sunday': 'Domenica'}
-    for eng, ita in giorni_it.items():
-        oggi = oggi.replace(eng, ita)
-    
-    # Crea l'array di perizie con info formattate
-    perizie_data = []
-    for p in perizie[:5]:  # Max 5 perizie
-        perizie_data.append({
-            'numero': p['numero'],
-            'tribunale': p['tribunale'],
-            'giudice': p.get('giudice', ''),
-            'parti': p.get('parti', ''),
-            'luogo_iop': p.get('luogo_iop', ''),
-            'giur': format_days(p['giuramento']),
-            'giur_urg': is_urgent(p['giuramento']),
-            'giur_data': p['data_giuramento'],
-            'inizio': format_days(p['inizio']),
-            'inizio_urg': is_urgent(p['inizio']),
-            'inizio_data': p['data_inizio'],
-            'bozza': format_days(p['bozza']),
-            'bozza_urg': is_urgent(p['bozza']),
-            'bozza_data': p['data_bozza'],
-            'dep': format_days(p['deposito']),
-            'dep_urg': is_urgent(p['deposito']),
-            'dep_data': p['data_deposito'],
-            'any_urgent': (is_urgent(p['giuramento']) or is_urgent(p['inizio']) or 
-                          is_urgent(p['bozza']) or is_urgent(p['deposito']))
-        })
-    
-    # Payload per TRMNL
-    payload = {
-        "merge_variables": {
-            "data_aggiornamento": oggi,
-            "num_perizie": len(perizie),
-            "perizie": perizie_data
-        }
-    }
-    
-    # Calcola dimensione
-    import json
-    payload_size = len(json.dumps(payload))
-    print(f"✓ Dimensione payload: {payload_size} bytes ({len(perizie_data)} perizie)")
-    
-    # Invia a TRMNL
-    try:
-        response = requests.post(
-            TRMNL_WEBHOOK_URL,
-            json=payload,
-            headers={"Content-Type": "application/json"}
-        )
-        response.raise_for_status()
-        print(f"✓ Dati inviati a TRMNL: {response.status_code}")
-        return True
-    except Exception as e:
-        print(f"✗ Errore invio a TRMNL: {e}")
-        return False
+        <!-- DEPOSITO -->
+        <div class="flex flex--column flex--align-center p-8 rounded-4
+                    {% if perizia.dep_urg %}bg--gray-70{% else %}bg--gray-10{% endif %}">
+          <span class="label mb-4">Deposito</span>
+          <span class="value value--large
+                       {% if perizia.dep_urg %}text--white{% endif %}">
+            {{ perizia.dep }}
+          </span>
+          <span class="description {% if perizia.dep_urg %}text--white{% endif %}">
+            {{ perizia.dep_data }}
+          </span>
+        </div>
 
-# ==================== MAIN ====================
+      </div>
+    </div>
+  </div>
 
-def main():
-    print("=== TRMNL Perizie - Aggiornamento Display ===\n")
-    
-    # 1. Leggi Google Sheet
-    df = read_google_sheet()
-    if df is None:
-        return
-    
-    # 2. Processa perizie
-    perizie = process_perizie(df)
-    if not perizie:
-        print("✗ Nessuna perizia attiva trovata")
-        return
-    
-    # 3. Invia a TRMNL
-    if TRMNL_WEBHOOK_URL != 'YOUR_WEBHOOK_URL_HERE':
-        send_to_trmnl(perizie)
-    else:
-        print("⚠ TRMNL_WEBHOOK_URL non configurato")
-    
-    print("\n=== Completato ===")
+  {% if forloop.last == false %}
+  <div class="divider my-16"></div>
+  {% endif %}
 
-if __name__ == "__main__":
-    main()
+  {% endfor %}
+
+</div>
+
+<!-- Title Bar opzionale -->
+<div class="title_bar">
+  <img class="image" src="https://usetrmnl.com/images/plugins/trmnl--render.svg" />
+  <span class="title">Perizie CTU</span>
+  <span class="instance">{{ num_perizie }} attive</span>
+</div>
