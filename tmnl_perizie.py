@@ -35,7 +35,13 @@ def read_google_sheet(sheet_id):
 def calculate_days_difference(date_str):
     """Calcola la differenza in giorni da oggi"""
     try:
-        target_date = datetime.strptime(date_str, '%Y-%m-%d')
+        # Prova prima il formato italiano gg/mm/aaaa
+        try:
+            target_date = datetime.strptime(date_str, '%d/%m/%Y')
+        except:
+            # Se fallisce, prova il formato ISO aaaa-mm-gg
+            target_date = datetime.strptime(date_str, '%Y-%m-%d')
+        
         today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
         diff = (target_date - today).days
         return diff
@@ -56,7 +62,13 @@ def format_days(days):
 def format_date(date_str):
     """Formatta la data in formato gg/mm/aaaa"""
     try:
-        date_obj = datetime.strptime(date_str, '%Y-%m-%d')
+        # Prova prima il formato italiano gg/mm/aaaa
+        try:
+            date_obj = datetime.strptime(date_str, '%d/%m/%Y')
+        except:
+            # Se fallisce, prova il formato ISO aaaa-mm-gg
+            date_obj = datetime.strptime(date_str, '%Y-%m-%d')
+        
         return date_obj.strftime('%d/%m/%Y')
     except:
         return ""
@@ -80,11 +92,17 @@ def process_perizie(df):
         bozza_days = calculate_days_difference(row['Data_Bozza'])
         deposito_days = calculate_days_difference(row['Data_Deposito'])
         
+        # Determina se c'è almeno una scadenza urgente
+        any_urgent = (is_urgent(giuramento_days) or is_urgent(inizio_days) or 
+                     is_urgent(bozza_days) or is_urgent(deposito_days))
+        
         perizia = {
             'numero': row['Numero_Perizia'],
             'tribunale': row['Tribunale'],
             'giudice': row.get('Giudice', ''),
             'luogo_iop': row.get('Luogo_IOP', ''),
+            'parti': row.get('Parti', ''),
+            'any_urgent': any_urgent,
             'giur': format_days(giuramento_days),
             'giur_urg': is_urgent(giuramento_days),
             'giur_data': format_date(row['Data_Giuramento']),
