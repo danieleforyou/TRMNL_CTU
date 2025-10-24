@@ -77,7 +77,12 @@ def is_urgent(days):
     """Determina se una scadenza è urgente"""
     if days is None:
         return False
-    return abs(days) <= URGENCY_THRESHOLD
+    if days > 0:
+        # Scadenza futura: urgente se entro 7 giorni
+        return days <= URGENCY_THRESHOLD
+    else:
+        # Scadenza passata: urgente solo se scaduta da max 3 giorni
+        return abs(days) <= 3
 
 def process_perizie(df):
     """Processa i dati delle perizie e calcola i giorni"""
