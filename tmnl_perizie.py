@@ -554,7 +554,6 @@ def send_to_trmnl(perizie):
 # ==================== MAIN ====================
 
 def main():
-print("VERSIONE ROBUSTA 17/06/2026")
     print(
 
         "=== "
